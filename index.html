@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fair Price — AI-Verified Used-Goods Pricing</title>
+<title>Fair Price â€” AI-Verified Used-Goods Pricing</title>
 <style>
   :root { --bg:#0e1116; --card:#161b22; --line:#21262d; --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950; --red:#f85149; --amber:#d29922; }
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -37,7 +37,7 @@
 <div class="wrap">
   <h1>Fair Price</h1>
   <p class="sub">AI-verified used-goods pricing estimates with reusable on-chain records.</p>
-  <div class="addr">0x0d0a41751359d2E0796DFEE5b195bf850BdB77c5</div>
+  <div class="addr">0x7e7Fa0a3Bd39e7247E157e4Fd983A623f81010C8</div>
 
   <div class="grid">
     <div class="stat"><div class="num" id="st-total">-</div><div class="lbl">Listings</div></div>
@@ -75,7 +75,7 @@
 </div>
 
 <script>
-const ADDR = "0x0d0a41751359d2E0796DFEE5b195bf850BdB77c5";
+const ADDR = "0x7e7Fa0a3Bd39e7247E157e4Fd983A623f81010C8";
 const RPC = "https://rpc-bradbury.genlayer.com";
 
 async function rpc(method, params) {
@@ -103,8 +103,8 @@ async function refreshStats() {
     // get_stats returns a dict; decode minimal: find fields by parsing ABI-encoded dict is complex.
     // Fallback: use get_listing_count only.
     document.getElementById("st-total").textContent = hexToInt(await callView(SELECTOR["get_listing_count"])).toString();
-    document.getElementById("st-completed").textContent = "—";
-    document.getElementById("st-records").textContent = "—";
+    document.getElementById("st-completed").textContent = "â€”";
+    document.getElementById("st-records").textContent = "â€”";
   } catch (e) {
     document.getElementById("st-total").textContent = "err";
   }

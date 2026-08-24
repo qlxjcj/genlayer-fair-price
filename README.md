@@ -5,7 +5,7 @@ good is **FAIR, OVERPRICED, or UNDERPRICED**, using AI-validator consensus over
 authoritative listing sources. Every estimate produces a reusable on-chain
 record keyed by item name.
 
-Live on Bradbury testnet: `0x0d0a41751359d2E0796DFEE5b195bf850BdB77c5`
+Live on Bradbury testnet: `0x7e7Fa0a3Bd39e7247E157e4Fd983A623f81010C8`
 
 ## Why it matters
 
