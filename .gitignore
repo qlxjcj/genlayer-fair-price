@@ -1,0 +1,8 @@
+.pytest_cache/
+artifacts/
+contracts/
+.env
+__pycache__/
+*.egg-info/
+dist/
+build/
