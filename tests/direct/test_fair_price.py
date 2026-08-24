@@ -21,6 +21,7 @@ from conftest import (
     VERDICT_OVERPRICED,
     VERDICT_UNDERPRICED,
     LLM_PATTERN,
+    with_source,
 )
 
 
@@ -106,6 +107,7 @@ def test_process_overpriced(direct_vm, fp):
     vm, c = fp
     vm.clear_mocks()
     vm.mock_llm(LLM_PATTERN, VERDICT_OVERPRICED)
+    with_source(vm)
     c.submit_listing(ITEM, "electronics", 900)
     c.process_listing(1)
 
@@ -119,6 +121,7 @@ def test_process_underpriced(direct_vm, fp):
     vm, c = fp
     vm.clear_mocks()
     vm.mock_llm(LLM_PATTERN, VERDICT_UNDERPRICED)
+    with_source(vm)
     c.submit_listing(ITEM, "electronics", 300)
     c.process_listing(1)
 
@@ -143,9 +146,11 @@ def test_record_queries_authoritative_sources(direct_vm, fp):
     assert any("zillow.com" in u for u in urls)          # Zillow
     assert len(urls) == 4
     assert ITEM.replace(" ", "+") in urls[0]
-    # no source mocked -> all retrieval attempts recorded as failed
-    assert all(s["retrieved"] is False for s in rec["sources"])
-    assert all(s["excerpt"] == "" for s in rec["sources"])
+    # fixture mocks kbb.com as retrieved; the others record as failed
+    kbb = next(s for s in rec["sources"] if "kbb.com" in s["url"])
+    assert kbb["retrieved"] is True
+    assert all(s["retrieved"] is False for s in rec["sources"] if "kbb.com" not in s["url"])
+    assert all(s["excerpt"] == "" for s in rec["sources"] if "kbb.com" not in s["url"])
 
 
 def test_record_preserves_retrieval_details(direct_vm, fp):
@@ -183,12 +188,42 @@ def test_inconclusive_explicit(direct_vm, fp):
     assert _record(c, ITEM)["status"] == "INCONCLUSIVE"
 
 
+# ---------- hard source requirement ----------
+
+def test_no_source_forces_inconclusive(direct_vm, fp):
+    # LLM says FAIR but no authoritative source was retrieved -> forced INCONCLUSIVE.
+    vm, c = fp
+    vm.clear_mocks()
+    vm.mock_llm(LLM_PATTERN, VERDICT_FAIR)
+    c.submit_listing(ITEM, "electronics", 520)
+    c.process_listing(1)
+
+    v = _verdict(c, 1)
+    assert v["status"] == "INCONCLUSIVE"
+    assert v["fair_price_min"] == 0
+    assert v["fair_price_max"] == 0
+    assert v["confidence"] == 0
+    assert v["matched_listings"] == []
+    assert "INCONCLUSIVE" in v["reasoning"]
+    assert all(s["retrieved"] is False for s in v["sources"])
+
+
+def test_no_source_forces_inconclusive_for_overpriced(direct_vm, fp):
+    vm, c = fp
+    vm.clear_mocks()
+    vm.mock_llm(LLM_PATTERN, VERDICT_OVERPRICED)
+    c.submit_listing(ITEM, "electronics", 900)
+    c.process_listing(1)
+    assert _verdict(c, 1)["status"] == "INCONCLUSIVE"
+
+
 # ---------- verdict normalization ----------
 
 def test_verdict_normalized(direct_vm, fp):
     vm, c = fp
     vm.clear_mocks()
     vm.mock_llm(LLM_PATTERN, VERDICT_MALFORMED)
+    with_source(vm)
     c.submit_listing(ITEM, "electronics", 520)
     c.process_listing(1)
 
@@ -207,6 +242,7 @@ def test_price_range_swapped(direct_vm, fp):
         "status": "FAIR", "fair_price_min": 600, "fair_price_max": 400,
         "confidence": 70, "matched_listings": [], "reasoning": "x",
     }))
+    with_source(vm)
     c.submit_listing(ITEM, "electronics", 520)
     c.process_listing(1)
     v = _verdict(c, 1)
@@ -221,6 +257,7 @@ def test_confidence_clamped_upper(direct_vm, fp):
         "status": "FAIR", "fair_price_min": 480, "fair_price_max": 540,
         "confidence": 150, "matched_listings": [], "reasoning": "x",
     }))
+    with_source(vm)
     c.submit_listing(ITEM, "electronics", 520)
     c.process_listing(1)
     assert _verdict(c, 1)["confidence"] == 100
@@ -287,6 +324,7 @@ def test_inconclusive_record_can_be_improved_by_anyone(direct_vm, fp, direct_bob
     vm.sender = direct_bob
     vm.clear_mocks()
     vm.mock_llm(LLM_PATTERN, VERDICT_OVERPRICED)
+    with_source(vm)
     c.submit_listing(ITEM, "electronics", 900)
     c.process_listing(2)
     rec = _record(c, ITEM)
@@ -322,11 +360,13 @@ def test_stats_counts_statuses(direct_vm, fp):
 
     vm.clear_mocks()
     vm.mock_llm(LLM_PATTERN, VERDICT_OVERPRICED)
+    with_source(vm)
     c.submit_listing("Rolex Submariner 41", "watch", 9000)
     c.process_listing(2)
 
     vm.clear_mocks()
     vm.mock_llm(LLM_PATTERN, VERDICT_UNDERPRICED)
+    with_source(vm)
     c.submit_listing("Toyota Corolla 2019", "car", 9000)
     c.process_listing(3)
 

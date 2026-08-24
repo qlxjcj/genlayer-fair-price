@@ -222,6 +222,21 @@ confidence=0, matched_listings=[].
             self._estimate(listing["item_name"], listing["category"], listing["asking_price"])
         )
 
+        # Hard source requirement: if no authoritative source was successfully
+        # retrieved, force INCONCLUSIVE regardless of what the LLM returned.
+        # The verdict must never rest on arbitrary holder-selected URLs alone.
+        if not any(s.get("retrieved") for s in verdict.get("sources", [])):
+            forced = {
+                "status": "INCONCLUSIVE",
+                "fair_price_min": 0,
+                "fair_price_max": 0,
+                "confidence": 0,
+                "matched_listings": [],
+                "reasoning": "No authoritative source could be retrieved; verdict forced to INCONCLUSIVE.",
+                "sources": verdict.get("sources", []),
+            }
+            verdict = self._normalize_verdict(forced)
+
         # Reusable estimate is keyed by normalized item name. Guard against an
         # unrelated caller silently replacing a settled estimate: only its
         # original requester may update it, and anyone may improve an INCONCLUSIVE one.

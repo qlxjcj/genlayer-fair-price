@@ -5,7 +5,7 @@ good is **FAIR, OVERPRICED, or UNDERPRICED**, using AI-validator consensus over
 authoritative listing sources. Every estimate produces a reusable on-chain
 record keyed by item name.
 
-Live on Bradbury testnet: `0x526C6783913e8Ea2627042719f7b0456bfA3d357`
+Live on Bradbury testnet: `0x0d0a41751359d2E0796DFEE5b195bf850BdB77c5`
 
 ## Why it matters
 
@@ -22,6 +22,9 @@ about the fair range, and must agree before a verdict is recorded.
   is preserved (`url`, `retrieved` flag, excerpt) in `sources[]`.
 - **No verdict without evidence** — if no source is retrieved, or sources don't
   cover the item, the verdict is explicitly `INCONCLUSIVE`. Never a silent "fair".
+- **Hard source requirement** — if no authoritative source was successfully
+  retrieved, the verdict is forced to `INCONCLUSIVE` in contract logic regardless
+  of what the LLM returned. A verdict never rests on holder-selected URLs alone.
 - **Consensus binds decision fields only** — status matches exactly, `fair_price_min`
   / `fair_price_max` / `confidence` each within ±10, `matched_listings`
   order-insensitive. `reasoning` and `sources` may differ in wording.
@@ -64,9 +67,11 @@ range/confidence and clears `matched_listings`.
 
 23 deterministic direct-mode tests (no network, no consensus) prove:
 submit validation, all four verdict paths, authoritative-source querying with
-retrieval details, explicit inconclusive, verdict normalization (bad enum,
-swapped/clamped range, clamped confidence), reusable case-insensitive records,
-ownership/collision guards, INCONCLUSIVE improvement, state guards, and stats.
+retrieval details, the hard source requirement (no source -> forced
+INCONCLUSIVE even when the LLM answers confidently), explicit inconclusive,
+verdict normalization (bad enum, swapped/clamped range, clamped confidence),
+reusable case-insensitive records, ownership/collision guards, INCONCLUSIVE
+improvement, state guards, and stats.
 
 ```bash
 python -m pytest tests/direct/ -v
@@ -78,5 +83,5 @@ python -m pytest tests/direct/ -v
 
 `submit_listing` is verified on-chain (AGREE, invalid input reverts). `process_listing`
 hits the known Bradbury consensus-contract revert on live validators; the AI
-pricing logic is proven by the 23 direct tests + lint, and the decision fields
+pricing logic is proven by the 25 direct tests + lint, and the decision fields
 the consensus binds are exercised deterministically in direct mode.

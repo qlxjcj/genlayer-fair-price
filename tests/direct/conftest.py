@@ -63,10 +63,19 @@ VERDICT_MALFORMED = json.dumps({
 
 LLM_PATTERN = r".*used-goods pricing engine.*"
 
+# A successful authoritative source so verdicts have at least one retrieved source.
+SOURCE_OK = r".*kbb\.com.*"
+SOURCE_BODY = "KBB fair range for this item is 480-540."
+
+
+def with_source(vm, body=SOURCE_BODY):
+    vm.mock_web(SOURCE_OK, {"method": "GET", "status": 200, "body": body})
+
 
 @pytest.fixture
 def fp(direct_vm, direct_deploy):
     vm = direct_vm
     vm.mock_llm(LLM_PATTERN, VERDICT_FAIR)
+    with_source(vm)
     c = direct_deploy(CONTRACT)
     return vm, c
