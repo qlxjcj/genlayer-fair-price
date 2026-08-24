@@ -18,16 +18,20 @@ about the fair range, and must agree before a verdict is recorded.
 ## Trust model
 
 - **Authoritative sources** — every estimate queries AutoTrader, Kelley Blue
-  Book, eBay sold/listed prices, and Zillow for the exact item. Each fetch result
-  is preserved (`url`, `retrieved` flag, excerpt) in `sources[]`.
+  Book, eBay sold/listed prices, and Zillow for the exact item. A source only
+  counts as `retrieved=True` when its response body actually references this
+  item, so a generic landing/error page never counts as item-specific evidence.
+  Each fetch result is preserved (`url`, `retrieved` flag, excerpt) in `sources[]`.
 - **No verdict without evidence** — if no source is retrieved, or sources don't
   cover the item, the verdict is explicitly `INCONCLUSIVE`. Never a silent "fair".
 - **Hard source requirement** — if no authoritative source was successfully
   retrieved, the verdict is forced to `INCONCLUSIVE` in contract logic regardless
   of what the LLM returned. A verdict never rests on holder-selected URLs alone.
-- **Consensus binds decision fields only** — status matches exactly, `fair_price_min`
-  / `fair_price_max` / `confidence` each within ±10, `matched_listings`
-  order-insensitive. `reasoning` and `sources` may differ in wording.
+- **Consensus binds decision fields + provenance** — status matches exactly,
+  `fair_price_min` / `fair_price_max` / `confidence` each within ±10,
+  `matched_listings` order-insensitive, and `sources` (url + retrieved pairs,
+  order-insensitive) so validators agree on which sources were actually
+  retrieved. `reasoning` and excerpt wording may differ.
 
 ## Lifecycle
 

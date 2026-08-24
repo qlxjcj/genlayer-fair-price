@@ -63,9 +63,10 @@ VERDICT_MALFORMED = json.dumps({
 
 LLM_PATTERN = r".*used-goods pricing engine.*"
 
-# A successful authoritative source so verdicts have at least one retrieved source.
+# A successful authoritative source whose body references the item, so verdicts
+# have at least one item-specific retrieved source.
 SOURCE_OK = r".*kbb\.com.*"
-SOURCE_BODY = "KBB fair range for this item is 480-540."
+SOURCE_BODY = "KBB fair range for " + ITEM + " is 480-540."
 
 
 def with_source(vm, body=SOURCE_BODY):

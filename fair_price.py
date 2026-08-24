@@ -63,6 +63,14 @@ class FairPrice(gl.Contract):
         q = item_name.replace(" ", "+")
         return [base + q for base in self.AUTHORITATIVE_SOURCES]
 
+    def _source_retrieved(self, url: str, body: str, item_name: str) -> bool:
+        # A source only counts as retrieved when the response body actually
+        # references this item, so a generic landing/error page never counts as
+        # item-specific pricing evidence.
+        if not body:
+            return False
+        return item_name.lower().replace(" ", "") in body.lower().replace(" ", "")
+
     def _estimate(self, item_name: str, category: str, asking_price: int) -> dict:
         def gather_and_estimate() -> dict:
             sources = []
@@ -71,8 +79,9 @@ class FairPrice(gl.Contract):
                 try:
                     content = gl.nondet.web.get(url)
                     body = self._decode_body(content)[:1200]
-                    texts.append(f"[{url}]\n{body}")
-                    sources.append({"url": url, "retrieved": True, "excerpt": body[:400]})
+                    retrieved = self._source_retrieved(url, body, item_name)
+                    texts.append(f"[{url}] [{'OK' if retrieved else 'NO_ITEM'}]\n{body}")
+                    sources.append({"url": url, "retrieved": retrieved, "excerpt": body[:400]})
                 except Exception:
                     texts.append(f"[{url}] [FETCH_FAILED]")
                     sources.append({"url": url, "retrieved": False, "excerpt": ""})
@@ -124,9 +133,11 @@ confidence=0, matched_listings=[].
             "Two results are equivalent if status "
             "(FAIR/OVERPRICED/UNDERPRICED/INCONCLUSIVE) matches exactly, "
             "fair_price_min and fair_price_max each differ by at most 10, "
-            "confidence values differ by at most 10 points, and matched_listings "
-            "contains the same listing identifiers (order-insensitive). reasoning "
-            "and sources may differ in wording."
+            "confidence values differ by at most 10 points, matched_listings "
+            "contains the same listing identifiers (order-insensitive), and "
+            "sources contains the same (url, retrieved) pairs (order-insensitive) "
+            "so validators agree on which authoritative sources were actually "
+            "retrieved for this item. reasoning and excerpt wording may differ."
         )
         return gl.eq_principle.prompt_comparative(gather_and_estimate, principle)
 

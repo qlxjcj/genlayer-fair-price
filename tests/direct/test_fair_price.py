@@ -217,6 +217,21 @@ def test_no_source_forces_inconclusive_for_overpriced(direct_vm, fp):
     assert _verdict(c, 1)["status"] == "INCONCLUSIVE"
 
 
+def test_generic_page_without_item_does_not_count_as_retrieved(direct_vm, fp):
+    vm, c = fp
+    vm.clear_mocks()
+    vm.mock_llm(LLM_PATTERN, VERDICT_FAIR)
+    # A 200 response whose body does NOT mention the item must not count as a
+    # retrieved item-specific source -> hard source requirement forces INCONCLUSIVE.
+    vm.mock_web(r".*kbb\.com.*", {"method": "GET", "status": 200, "body": "Welcome to KBB. Search car prices here."})
+    c.submit_listing(ITEM, "electronics", 520)
+    c.process_listing(1)
+
+    v = _verdict(c, 1)
+    assert v["status"] == "INCONCLUSIVE"
+    assert all(s["retrieved"] is False for s in v["sources"])
+
+
 # ---------- verdict normalization ----------
 
 def test_verdict_normalized(direct_vm, fp):
@@ -360,13 +375,13 @@ def test_stats_counts_statuses(direct_vm, fp):
 
     vm.clear_mocks()
     vm.mock_llm(LLM_PATTERN, VERDICT_OVERPRICED)
-    with_source(vm)
+    vm.mock_web(r".*kbb\.com.*", {"method": "GET", "status": 200, "body": "KBB range for Rolex Submariner 41 is 430-470."})
     c.submit_listing("Rolex Submariner 41", "watch", 9000)
     c.process_listing(2)
 
     vm.clear_mocks()
     vm.mock_llm(LLM_PATTERN, VERDICT_UNDERPRICED)
-    with_source(vm)
+    vm.mock_web(r".*kbb\.com.*", {"method": "GET", "status": 200, "body": "KBB range for Toyota Corolla 2019 is 600-660."})
     c.submit_listing("Toyota Corolla 2019", "car", 9000)
     c.process_listing(3)
 
